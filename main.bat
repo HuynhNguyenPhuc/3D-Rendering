@@ -1,25 +1,53 @@
 @echo off
 
-g++ -o main.exe main.cpp
-
-if %errorlevel%==0 (
-    echo Compilation successful.
-
-    main.exe
-    del main.exe
-
-    if %errorlevel%==0 (
-        echo Executable ran successfully.
-        
-        py main.py
-        if %errorlevel%==0 (
-            echo Python script ran successfully.
-        ) else (
-            echo Python script failed.
-        )
-    ) else (
-        echo Executable failed to run.
-    )
-) else (
-    echo Compilation failed.
+:: Compile the geometry.cpp and bbox.cpp file
+g++ -c geometry.cpp -o geometry.o
+if %errorlevel% neq 0 (
+    echo Compilation of geometry.cpp failed.
+    del geometry.o
+    exit /b %errorlevel%
 )
+
+g++ -c bbox.cpp -o bbox.o
+if %errorlevel% neq 0 (
+    echo Compilation of bbox.cpp failed.
+    del bbox.o
+    exit /b %errorlevel%
+)
+
+:: Compile and link sphere.cpp
+g++ sphere.cpp geometry.o bbox.o -o sphere.exe
+if %errorlevel% neq 0 (
+    echo Compilation of sphere.cpp failed.
+    del geometry.o
+    del bbox.o
+    exit /b %errorlevel%
+)
+
+echo Compilation successful.
+
+:: Run the executable
+sphere.exe
+if %errorlevel% neq 0 (
+    echo Executable failed to run.
+    del sphere.exe
+    del geometry.o
+    del bbox.o
+    exit /b %errorlevel%
+)
+
+echo Executable ran successfully.
+
+:: Clean up
+del sphere.exe
+del geometry.o
+del bbox.o
+
+:: Run the Python script
+py main.py
+if %errorlevel% neq 0 (
+    echo Python script failed.
+    exit /b %errorlevel%
+)
+
+echo Python script ran successfully.

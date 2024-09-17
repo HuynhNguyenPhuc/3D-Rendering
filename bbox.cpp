@@ -9,6 +9,10 @@ BoundingBox::BoundingBox()
 
 BoundingBox::BoundingBox(const Vec3& min, const Vec3& max) : min(min), max(max) {}
 
+vec3 BoundingBox::center() const {
+    return (min + max) / 2.0f;
+}s
+
 BoundingBox BoundingBox::expand(const BoundingBox& other) const {
     Vec3 newMin(std::min(min.x, other.min.x), std::min(min.y, other.min.y), std::min(min.z, other.min.z));
     Vec3 newMax(std::max(max.x, other.max.x), std::max(max.y, other.max.y), std::max(max.z, other.max.z));

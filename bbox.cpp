@@ -18,6 +18,21 @@ float BoundingBox::getSurfaceArea() const {
     return 2.0f * (extents.x * extents.y + extents.y * extents.z + extents.z * extents.x);
 }
 
+int BoundingBox::getLongestAxis() const {
+    int axis = -1;
+    float length = std::numeric_limits<float>::lowest();
+   
+    Vec3 extents = max - min;
+
+    for (int i = 0; i < 3; i++){
+        if (extents[i] > length){
+            axis = i;
+            length = extents[i];
+        }
+    }
+    return axis;
+}
+
 BoundingBox BoundingBox::expand(const BoundingBox& other) const {
     Vec3 newMin(std::min(min.x, other.min.x), std::min(min.y, other.min.y), std::min(min.z, other.min.z));
     Vec3 newMax(std::max(max.x, other.max.x), std::max(max.y, other.max.y), std::max(max.z, other.max.z));

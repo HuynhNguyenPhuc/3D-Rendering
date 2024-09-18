@@ -12,6 +12,7 @@ public:
     BoundingBox(const Vec3& min, const Vec3& max);
 
     Vec3 center() const;
+    float getSurfaceArea() const;
 
     bool intersect(const Ray& ray, float& t_min, float& t_max) const;
     void expand(const Vec3& p);

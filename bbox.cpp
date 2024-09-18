@@ -11,7 +11,12 @@ BoundingBox::BoundingBox(const Vec3& min, const Vec3& max) : min(min), max(max) 
 
 vec3 BoundingBox::center() const {
     return (min + max) / 2.0f;
-}s
+}
+
+float BoundingBox::getSurfaceArea() const {
+    Vec3 extents = max - min;
+    return 2.0f * (extents.x * extents.y + extents.y * extents.z + extents.z * extents.x);
+}
 
 BoundingBox BoundingBox::expand(const BoundingBox& other) const {
     Vec3 newMin(std::min(min.x, other.min.x), std::min(min.y, other.min.y), std::min(min.z, other.min.z));

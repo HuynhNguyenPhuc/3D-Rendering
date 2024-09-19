@@ -10,6 +10,7 @@ public:
     Vec3(float value);
     Vec3(float x, float y, float z);
     float operator [] (int idx) const;
+    float length() const;
     Vec3 operator + (const Vec3& v) const;
     Vec3 operator - (const Vec3& v) const;
     Vec3 operator * (float k) const;

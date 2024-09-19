@@ -19,7 +19,10 @@ float Vec3::operator [] (int idx) const {
     else if (idx == 1) return y;
     else if (idx == 2) return z;
     else throw std::out_of_range("Index out of range!");
-} 
+}
+float Vec3::length() const {
+    return std::sqrt(x * x + y * y + z * z);
+}
 
 Vec3 Vec3::operator + (const Vec3& v) const {
     return Vec3(x + v.x, y + v.y, z + v.z);

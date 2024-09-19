@@ -50,8 +50,8 @@ void BoundingBox::expand(const Vec3& p) {
 }
 
 bool BoundingBox::intersect(const Ray& ray, float& t_min, float& t_max) const {
-    t_min = -std::numeric_limits<float>::infinity();
-    t_max = std::numeric_limits<float>::infinity();
+    t_min = std::numeric_limits<float>::lowest();
+    t_max = std::numeric_limits<float>::max();
 
     for (int i = 0; i < 3; ++i) {
         float invD = 1.0f / ray.direction[i];

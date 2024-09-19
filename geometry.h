@@ -45,6 +45,7 @@ public:
 
     Sphere(const Vec3& center, float radius, const Vec3& color, float albedo);
     bool intersect(const Ray& ray, float& t) const;
+    bool intersect(const Ray& ray, float& t_min, float& t_max) const;
 };
 
 class Plane {

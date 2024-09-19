@@ -9,7 +9,7 @@ BoundingBox::BoundingBox()
 
 BoundingBox::BoundingBox(const Vec3& min, const Vec3& max) : min(min), max(max) {}
 
-vec3 BoundingBox::center() const {
+Vec3 BoundingBox::center() const {
     return (min + max) / 2.0f;
 }
 

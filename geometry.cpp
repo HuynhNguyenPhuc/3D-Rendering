@@ -85,6 +85,19 @@ bool Sphere::intersect(const Ray& ray, float& t) const {
     return t >= 0;
 }
 
+bool Sphere::intersect(const Ray &ray, float &t_min, float &t_max) const {
+    Vec3 oc = ray.origin - center;
+    float a = ray.direction.dot(ray.direction);
+    float b = 2.0f * oc.dot(ray.direction);
+    float c = oc.dot(oc) - radius * radius;
+    float discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) return false;
+    t_min = (-b - std::sqrt(discriminant)) / (2.0f * a);
+    t_max = (-b + std::sqrt(discriminant)) / (2.0f * a);
+    if (t_max < 0) return false;
+    if (t_min < 0) t_min = t_max;
+    return true;
+}
 
 /*
  * Plane

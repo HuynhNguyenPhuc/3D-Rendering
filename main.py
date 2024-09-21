@@ -9,8 +9,8 @@ def convert(input_file, output_file):
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    input_files = ["results/sphere.ppm"]
-    output_files = ["results/sphere.png"]
+    input_files = ["results/sphere.ppm", "results/volume_rendering.ppm"]
+    output_files = ["results/sphere.png", "results/volume_rendering.png"]
     
     for input_file, output_file in zip(input_files, output_files):
         convert(input_file, output_file)

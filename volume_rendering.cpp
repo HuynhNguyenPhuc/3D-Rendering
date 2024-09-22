@@ -8,14 +8,12 @@
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-float transfer_function(float x) {
-    return std::min(1 - std::exp(-x), 1.0f);
+float transfer_function(float x, float sigma_alpha) {
+    return std::min(1 - std::exp(-x * sigma_alpha), 1.0f);
 }
 
-Vec3 shade_sphere(const Vec3& hit_point, const Sphere& sphere, const Vec3& background_color, float travel_distance, float max_travel_distance) {
-    // float alpha = std::min(travel_distance / max_travel_distance, 1.0f);
-    
-    float alpha = (transfer_function(travel_distance / max_travel_distance) - transfer_function(0.0f)) / (transfer_function(1.0f) - transfer_function(0.0f));
+Vec3 shade_sphere(const Vec3& hit_point, const Sphere& sphere, const Vec3& background_color, float travel_distance, float max_travel_distance) {  
+    float alpha = transfer_function(travel_distance, 0.4);
     alpha = std::min(std::max(alpha, 0.0f), 1.0f);
 
     return background_color * (1.0f - alpha) + sphere.color * alpha;

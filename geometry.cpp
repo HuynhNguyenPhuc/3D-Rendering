@@ -28,6 +28,12 @@ Vec3 Vec3::operator + (const Vec3& v) const {
     return Vec3(x + v.x, y + v.y, z + v.z);
 }
 
+void Vec3::operator+=(const Vec3 &v) {
+    x += v.x;
+    y += v.y;   
+    z += v.z;
+}
+
 Vec3 Vec3::operator - (const Vec3& v) const {
     return Vec3(x - v.x, y - v.y, z - v.z);
 }
@@ -63,6 +69,10 @@ Vec3 Vec3::normalize() const {
  */
 Ray::Ray(const Vec3& origin, const Vec3& direction)
     : origin(origin), direction(direction.normalize()) {}
+
+Vec3 Ray::position(float t) const {
+    return origin + direction * t;
+}
 
 /*
  * Light

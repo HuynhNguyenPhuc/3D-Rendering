@@ -12,6 +12,7 @@ public:
     float operator [] (int idx) const;
     float length() const;
     Vec3 operator + (const Vec3& v) const;
+    void operator += (const Vec3& v); 
     Vec3 operator - (const Vec3& v) const;
     Vec3 operator * (float k) const;
     Vec3 operator * (const Vec3& v) const;
@@ -26,6 +27,7 @@ public:
     Vec3 origin;
     Vec3 direction;
     Ray(const Vec3& origin, const Vec3& direction);
+    Vec3 position(float t) const;
 };
 
 class Light {

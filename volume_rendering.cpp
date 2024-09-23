@@ -8,12 +8,15 @@
 const int WIDTH = 640;
 const int HEIGHT = 480;
 
-float transfer_function(float x, float sigma_alpha) {
+float transfer_function(float x, float sigma_alpha = 0.5f) {
     return std::min(1 - std::exp(-x * sigma_alpha), 1.0f);
 }
 
+/*
+ * Beer-Lambert law
+ */
 Vec3 shade_sphere(const Vec3& hit_point, const Sphere& sphere, const Vec3& background_color, float travel_distance, float max_travel_distance) {  
-    float alpha = transfer_function(travel_distance, 0.4);
+    float alpha = transfer_function(travel_distance, 0.4f);
     alpha = std::min(std::max(alpha, 0.0f), 1.0f);
 
     return background_color * (1.0f - alpha) + sphere.color * alpha;

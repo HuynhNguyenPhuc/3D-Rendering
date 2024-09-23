@@ -31,16 +31,16 @@ Vec3 shade_sphere(const Vec3& hit_point_entrance, const Vec3& hit_point_exit, co
     Vec3 result(0.0f, 0.0f, 0.0f);
     float transmission = 1.0f;
 
-    float step_size = (hit_point_entrance - hit_point_exit).length() / NUM_STEPS;
-    Vec3 step_direction = (hit_point_entrance - hit_point_exit) / (float) NUM_STEPS;
-    Vec3 current_point = hit_point_exit + step_direction * 0.5;
+    float step_size = (hit_point_exit - hit_point_entrance).length() / NUM_STEPS;
+    Vec3 step_direction = (hit_point_exit - hit_point_entrance) / (float) NUM_STEPS;
+    Vec3 current_point = hit_point_entrance + step_direction * 0.5;
 
     float attenuation = transfer_function(step_size); // Beer's law for light attenuation
 
     for (int i = 0; i < NUM_STEPS; ++i) {
         Vec3 L_i_x_i = get_light_intensity(current_point, sphere, light, step_size);
         transmission *= attenuation;
-        result = (result + L_i_x_i) * attenuation;
+        result += L_i_x_i * transmission;
         current_point += step_direction;
     }
 
@@ -53,7 +53,7 @@ void save(const std::string& filename, const unsigned char* data) {
     ofs.write(reinterpret_cast<const char*>(data), WIDTH * HEIGHT * 3);
 }
 
-void backward_ray_marching() {
+void forward_ray_marching() {
     unsigned char image[WIDTH * HEIGHT * 3] = {0};
 
     Vec3 camera(0, 0, 0);
@@ -85,11 +85,11 @@ void backward_ray_marching() {
         }
     }
 
-    save("./results/backward_ray_marching.ppm", image);
-    std::cout << "Image saved as results/backward_ray_marching.ppm" << std::endl;
+    save("./results/forward_ray_marching.ppm", image);
+    std::cout << "Image saved as results/forward_ray_marching.ppm" << std::endl;
 }
 
 int main() {
-    backward_ray_marching();
+    forward_ray_marching();
     return 0;
 }

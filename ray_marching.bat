@@ -15,6 +15,15 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
+:: Compile and link forward_ray_marching.cpp
+g++ -std=c++11 forward_ray_marching.cpp geometry.o bbox.o -o forward_ray_marching.exe
+if %errorlevel% neq 0 (
+    echo Compilation of forward_ray_marching.cpp failed.
+    del geometry.o
+    del bbox.o
+    exit /b %errorlevel%
+)
+
 :: Compile and link backward_ray_marching.cpp
 g++ -std=c++11 backward_ray_marching.cpp geometry.o bbox.o -o backward_ray_marching.exe
 if %errorlevel% neq 0 (
@@ -36,9 +45,11 @@ if %errorlevel% neq 0 (
 echo Compilation successful.
 
 :: Run the executable
+forward_ray_marching.exe
 backward_ray_marching.exe
 if %errorlevel% neq 0 (
     echo Executable failed to run.
+    del forward_ray_marching.exe
     del backward_ray_marching.exe
     del geometry.o
     del bbox.o
@@ -48,6 +59,7 @@ if %errorlevel% neq 0 (
 echo Executable ran successfully.
 
 :: Clean up
+del forward_ray_marching.exe
 del backward_ray_marching.exe
 del geometry.o
 del bbox.o

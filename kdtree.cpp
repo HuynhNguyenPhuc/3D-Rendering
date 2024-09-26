@@ -23,16 +23,17 @@ BoundingBox merge(std::vector<Triangle*>& triangles){
         throw std::invalid_argument("Triangle list cannot be empty");
     }
 
-    Vec3 min(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-    Vec3 max(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
+    Vec3 _min(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+    Vec3 _max(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 
     for (const auto& triangle: triangles){
         BoundingBox bbox = triangle->getBoundingBox();
-        for (int i = 0; i<3; i++){
-            min[i] = std::min(min[i], bbox.min[i]);
-            max[i] = std::max(max[i], bbox.max[i]);
+        for (int i = 0; i< 3; i++){
+            _min[i] = std::min(_min[i], bbox.min[i]);
+            _max[i] = std::max(_max[i], bbox.max[i]);
         }
     }
+    return BoundingBox(_min, _max);
 }
 
 bool hasIntersectPrimitives(const std::shared_ptr<KDNode> node, const Ray& ray, float& t, Triangle*& hitTriangle) {
@@ -52,13 +53,13 @@ bool hasIntersectPrimitives(const std::shared_ptr<KDNode> node, const Ray& ray, 
 
 KDNode::KDNode() : left(nullptr), right(nullptr) {}
 
-KDNode::KDNode(const std::vector<Triangle*>& triangles) : triangles(triangles), left(nullptr), right(nullptr) {
-    if (!triangles.empty()) {
-        bbox = merge(triangles);
+KDNode::KDNode(std::vector<Triangle*>& triangles) : triangles(triangles), left(nullptr), right(nullptr) {
+    if (!this->triangles.empty()) {
+        bbox = merge(this->triangles);
     }
 }
 
-KDTree::KDTree(const std::vector<Triangle>& triangles) {
+KDTree::KDTree(std::vector<Triangle>& triangles) {
     std::vector<Triangle*> triangle_pointers;
     for (auto& triangle: triangles){
         triangle_pointers.push_back(&triangle);

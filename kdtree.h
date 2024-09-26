@@ -13,15 +13,15 @@ class KDNode {
         std::shared_ptr<KDNode> left;
         std::shared_ptr<KDNode> right;
 
-        KDNode() : left(nullptr), right(nullptr) {}
-        KDNode(const std::vector<Triangle*>& triangles);
+        KDNode();
+        KDNode(std::vector<Triangle*>& triangles);
 };
 
 class KDTree {
     public:
         std::shared_ptr<KDNode> root;
 
-        KDTree(const std::vector<Triangle>& triangles);
+        KDTree(std::vector<Triangle>& triangles);
         bool intersect(const Ray& ray, float& t, Triangle*& hit_triangle) const;
 
     private:

@@ -10,9 +10,11 @@ public:
     Vec3(float value);
     Vec3(float x, float y, float z);
     float operator [] (int idx) const;
+    float& operator [] (int idx);
     float length() const;
     Vec3 operator + (const Vec3& v) const;
     void operator += (const Vec3& v); 
+    Vec3 operator - () const;
     Vec3 operator - (const Vec3& v) const;
     Vec3 operator * (float k) const;
     Vec3 operator * (const Vec3& v) const;
@@ -71,6 +73,7 @@ public:
     Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& color, float albedo);
     bool intersect(const Ray& ray, float& t) const;
     BoundingBox getBoundingBox() const;
+    Vec3 getNormal(const Vec3& ray_direction) const;
 };
 
 #endif // GEOMETRY_H

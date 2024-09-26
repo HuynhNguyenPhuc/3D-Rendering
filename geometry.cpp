@@ -20,7 +20,16 @@ float Vec3::operator [] (int idx) const {
     else if (idx == 2) return z;
     else throw std::out_of_range("Index out of range!");
 }
-float Vec3::length() const {
+
+float &Vec3::operator[](int idx){
+    if (idx == 0) return x;
+    else if (idx == 1) return y;
+    else if (idx == 2) return z;
+    else throw std::out_of_range("Index out of range!");
+}
+
+float Vec3::length() const
+{
     return std::sqrt(x * x + y * y + z * z);
 }
 
@@ -32,6 +41,10 @@ void Vec3::operator+=(const Vec3 &v) {
     x += v.x;
     y += v.y;   
     z += v.z;
+}
+
+Vec3 Vec3::operator-() const {
+    return Vec3(-x, -y, -z);
 }
 
 Vec3 Vec3::operator - (const Vec3& v) const {
@@ -165,4 +178,17 @@ BoundingBox Triangle::getBoundingBox() const {
     );
 
     return BoundingBox(minVec, maxVec);
+}
+
+Vec3 Triangle::getNormal(const Vec3& ray_direction) const {
+    Vec3 edge1 = p1 - p0;
+    Vec3 edge2 = p2 - p0;
+    Vec3 normal = edge1.cross(edge2).normalize();
+
+    float epsilon = 1e-6;
+    if (normal.dot(-ray_direction) < epsilon) {
+        normal = -normal;
+    }
+
+    return normal;
 }

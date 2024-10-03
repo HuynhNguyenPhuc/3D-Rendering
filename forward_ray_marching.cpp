@@ -28,7 +28,7 @@ Vec3 get_light_intensity(const Vec3& particle_hit_point, const Sphere& sphere, c
 }
 
 Vec3 shade_sphere(const Vec3& hit_point_entrance, const Vec3& hit_point_exit, const Sphere& sphere, const Light& light) {
-    Vec3 result(0.0f, 0.0f, 0.0f);
+    Vec3 result = sphere.color;
     float transmission = 1.0f;
 
     float step_size = (hit_point_exit - hit_point_entrance).length() / NUM_STEPS;

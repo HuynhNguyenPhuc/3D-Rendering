@@ -7,8 +7,8 @@
 
 const int WIDTH = 640;
 const int HEIGHT = 480;
-const Vec3 BACKGROUND_COLOR(1.0f, 0.0f, 0.0f);
-const float SIGMA_A = 0.35f;
+const Vec3 BACKGROUND_COLOR(0.572f, 0.772f, 0.921f);
+const float SIGMA_A = 0.45f;
 const int NUM_STEPS = 10;
 
 float transfer_function(float distance) {
@@ -28,7 +28,7 @@ Vec3 get_light_intensity(const Vec3& particle_hit_point, const Sphere& sphere, c
 }
 
 Vec3 shade_sphere(const Vec3& hit_point_entrance, const Vec3& hit_point_exit, const Sphere& sphere, const Light& light) {
-    Vec3 result(0.0f, 0.0f, 0.0f);
+    Vec3 result = sphere.color;
     float transmission = 1.0f;
 
     float step_size = (hit_point_entrance - hit_point_exit).length() / NUM_STEPS;
@@ -58,7 +58,7 @@ void backward_ray_marching() {
 
     Vec3 camera(0, 0, 0);
     Sphere sphere(Vec3(0, 0, -5), 3.0f, Vec3(0.0f, 0.0f, 0.0f), SIGMA_A);
-    Light light(Vec3(2, 2, -7), Vec3(1.0f, 1.0f, 1.0f), 10.0f);
+    Light light(Vec3(4, 4, -7), Vec3(1.3f, 0.3f, 0.9f), 10.0f);
 
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {

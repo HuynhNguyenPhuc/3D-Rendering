@@ -1,54 +1,60 @@
+/*
+ * Whitted Ray Tracing algorithm
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cmath>
 #include <algorithm>
 #include <vector>
-#include <limits>
+#include <memory>
 #include "vec3.h"
-#include "data_loader.h"
-#include "geometry.h"
-#include "primitive_tree.h"
-#include "optics.h"
 #include "material.h"
+#include "geometry.h"
+#include "optics.h"
+#include "primitive_tree.h"
 
-const int WIDTH = 640;
-const int HEIGHT = 480;
-const int MAX_BOUNCES = 10;
+const int WIDTH = 920;
+const int HEIGHT = 640;
+const int MAX_BOUNCES = 150;
 const Vec3 BACKGROUND_COLOR = Vec3(0.0f, 0.0f, 0.0f);
 
 Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector<Light*>& lights, int depth) {
     if (depth > MAX_BOUNCES) return BACKGROUND_COLOR;
 
     float t;
-    Primitive* hitprimitive;
+    Primitive* hitPrimitive;
 
-    if (!primitives.intersect(ray, t, hitprimitive)) {
+    if (!primitives.intersect(ray, t, hitPrimitive)) {
         return BACKGROUND_COLOR;
     }
 
     Vec3 hit_point = ray.position(t);
-    Vec3 normal = hitprimitive->getNormal(hit_point);
+    Vec3 normal = hitPrimitive->getNormal(hit_point);
     Vec3 color(0.0f, 0.0f, 0.0f);
 
-    switch (hitprimitive->material.type) {
+    switch (hitPrimitive->material.type) {
         case REFRACTIVE: {
+            // Compute reflection direction
             Vec3 reflected_direction = reflection(ray.direction, normal);
             Ray reflected_ray(hit_point + normal * 1e-3, reflected_direction);
             Vec3 reflected_color = cast_ray(reflected_ray, primitives, lights, depth + 1);
 
-            Vec3 refracted_direction = refraction(ray.direction, normal, hitprimitive->material.ior);
+            // Compute refraction direction
+            Vec3 refracted_direction = refraction(ray.direction, normal, hitPrimitive->material.ior);
             Vec3 refracted_color(0.0f);
             if (refracted_direction != Vec3(0.0f)) {
                 Ray refracted_ray(hit_point - normal * 1e-3, refracted_direction);
                 refracted_color = cast_ray(refracted_ray, primitives, lights, depth + 1);
             }
 
-            float kr = fresnel(ray.direction, normal, hitprimitive->material.ior);
+            // Compute Fresnel effect
+            float kr = fresnel(ray.direction, normal, hitPrimitive->material.ior);
             color = reflected_color * kr + refracted_color * (1 - kr);
             break;
         }
         case REFLECTIVE: {
-            Vec3 reflected_direction = reflection(ray.direction, normal);
+            Vec3 reflected_direction = (ray.direction - normal * ray.direction.dot(normal) * 2).normalize();
             Ray reflected_ray(hit_point + normal * 1e-3, reflected_direction);
             color = cast_ray(reflected_ray, primitives, lights, depth + 1);
             break;
@@ -62,13 +68,13 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
 
                 Ray shadow_ray(hit_point + normal * 1e-3, light_direction);
                 float tShadow;
-                Primitive* shadowHitprimitive;
-                bool isInShadow = primitives.intersect(shadow_ray, tShadow, shadowHitprimitive) && tShadow * tShadow < light_distance_2;
+                Primitive* shadowHitPrimitive;
+                bool isInShadow = primitives.intersect(shadow_ray, tShadow, shadowHitPrimitive) && tShadow * tShadow < light_distance_2;
 
                 if (!isInShadow) {
-                    Vec3 diffuse = hitprimitive->material.color * std::max(0.0f, light_direction.dot(normal)) * light_intensity;
-                    Vec3 reflected_direction = reflection(ray.direction, normal);
-                    Vec3 specular = Vec3(1.0f) * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitprimitive->material.shininess) * light_intensity;
+                    Vec3 diffuse = hitPrimitive->material.color * std::max(0.0f, light_direction.dot(normal)) * light_intensity;
+                    Vec3 reflected_direction = (ray.direction - normal * ray.direction.dot(normal) * 2).normalize();
+                    Vec3 specular = Vec3(1.0f) * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitPrimitive->material.shininess) * light_intensity;
                     color += diffuse + specular;
                 }
             }
@@ -90,32 +96,45 @@ void save(const std::string& filename, const unsigned char* data) {
 void whitted_ray_tracing() {
     unsigned char image[WIDTH * HEIGHT * 3] = {0};
 
-    DataLoader loader;
-    std::vector<float> vertexArray = loader.load("./models/laurel.obj");
+    Vec3 camera(0.0f, 0.0f, 0.0f);
 
-    if (vertexArray.empty()) {
-        std::cerr << "Failed to load laurel.obj!" << std::endl;
-        return;
-    }
+    std::vector<Primitive*> primitivesList;
 
-    std::vector<Primitive*> primitive_pointers;
+    std::vector<Vec3> colors = {
+        Vec3(1.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f), Vec3(1.0f, 1.0f, 0.0f),
+        Vec3(1.0f, 0.0f, 1.0f), Vec3(0.0f, 1.0f, 1.0f), Vec3(0.5f, 0.5f, 0.5f), Vec3(1.0f, 0.5f, 0.0f),
+        Vec3(0.5f, 0.0f, 1.0f), Vec3(0.0f, 0.5f, 1.0f), Vec3(1.0f, 0.5f, 0.5f), Vec3(0.5f, 1.0f, 0.5f),
+        Vec3(0.5f, 0.5f, 1.0f), Vec3(1.0f, 1.0f, 1.0f), Vec3(0.8f, 0.8f, 0.8f), Vec3(0.3f, 0.7f, 0.4f)
+    };
 
-    Vec3 primitive_color(0.0f, 0.5f, 0.0f);
-    Material material(primitive_color, 0.6f, 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE); // Set as REFRACTIVE
+    std::vector<float> radii = {0.7f, 0.8f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.8f, 1.0f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 0.7f, 0.8f};
 
-    for (size_t i = 0; i < vertexArray.size(); i += 24) {
-        Vec3 v0(vertexArray[i], vertexArray[i+1], vertexArray[i+2]);
-        Vec3 v1(vertexArray[i+8], vertexArray[i+9], vertexArray[i+10]);
-        Vec3 v2(vertexArray[i+16], vertexArray[i+17], vertexArray[i+18]);
-        primitive_pointers.push_back(new Triangle(v0, v1, v2, material));
+    std::vector<MaterialType> materialTypes = {
+        MaterialType::REFLECTIVE, MaterialType::REFRACTIVE, MaterialType::NONE, MaterialType::REFLECTIVE,
+        MaterialType::REFRACTIVE, MaterialType::NONE, MaterialType::REFLECTIVE, MaterialType::REFRACTIVE,
+        MaterialType::NONE, MaterialType::REFLECTIVE, MaterialType::REFRACTIVE, MaterialType::NONE,
+        MaterialType::REFLECTIVE, MaterialType::REFRACTIVE, MaterialType::NONE, MaterialType::REFLECTIVE
+    };
+
+    float spacing = 2.2f;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            int index = i * 4 + j;
+            Vec3 color = colors[index];
+            float radius = radii[index];
+            MaterialType matType = materialTypes[index];
+            Material material(color, 0.6f, 0.3f, 0.5f, 0.5f, (matType == MaterialType::REFRACTIVE ? 0.8f : 0.0f), 1.5f, 32.0f, matType);
+
+            Vec3 position(-3.5f + j * spacing, -1.5f, -8.0f + i * spacing);
+            primitivesList.push_back(new Sphere(position, radius, material));
+        }
     }
 
     Material groundMaterial(Vec3(0.5f, 0.5f, 0.5f), 0.6f, 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE);
-    primitive_pointers.push_back(new Plane(Vec3(0.0f, 0.75f, 0.0f), 2.0f, groundMaterial));
+    primitivesList.push_back(new Plane(Vec3(0.0f, 0.75f, 0.0f), 2.0f, groundMaterial));
 
-    PrimitiveTree primitives(primitive_pointers);
-    
-    Vec3 camera(0, 0, 5);
+    PrimitiveTree primitives(primitivesList);
+
     std::vector<Light*> lights;
     lights.push_back(new Light(Vec3(-10.0f, 10.0f, 0.0f), Vec3(1.0f, 1.0f, 1.0f), 1.0f));
     lights.push_back(new Light(Vec3(10.0f, 10.0f, 10.0f), Vec3(0.8f, 0.8f, 0.8f), 0.6f));
@@ -136,7 +155,7 @@ void whitted_ray_tracing() {
         }
     }
 
-    for (Primitive* primitive : primitive_pointers){
+    for (Primitive* primitive : primitivesList) {
         delete primitive;
     }
 
@@ -144,8 +163,8 @@ void whitted_ray_tracing() {
         delete light;
     }
 
-    save("./results/laurel.ppm", image);
-    std::cout << "Image saved as results/laurel.ppm" << std::endl;
+    save("./results/whitted_ray_tracing.ppm", image);
+    std::cout << "Image saved as results/whitted_ray_tracing.ppm" << std::endl;
 }
 
 int main() {

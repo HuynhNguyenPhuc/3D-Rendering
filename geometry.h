@@ -1,28 +1,10 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
-class BoundingBox;
+#include "vec3.h"
+#include "material.h" 
 
-class Vec3 {
-public:
-    float x, y, z;
-    Vec3();
-    Vec3(float value);
-    Vec3(float x, float y, float z);
-    float operator [] (int idx) const;
-    float& operator [] (int idx);
-    float length() const;
-    Vec3 operator + (const Vec3& v) const;
-    void operator += (const Vec3& v); 
-    Vec3 operator - () const;
-    Vec3 operator - (const Vec3& v) const;
-    Vec3 operator * (float k) const;
-    Vec3 operator * (const Vec3& v) const;
-    Vec3 operator / (float k) const;
-    float dot(const Vec3& v) const;
-    Vec3 cross(const Vec3& v) const;
-    Vec3 normalize() const;
-};
+class BoundingBox;
 
 class Ray {
 public:
@@ -32,7 +14,7 @@ public:
     Vec3 position(float t) const;
 };
 
-class Light {
+class Light{
 public:
     Vec3 position;
     Vec3 color;
@@ -41,39 +23,47 @@ public:
     Light(const Vec3& position, const Vec3& color, float intensity);
 };
 
-class Sphere {
+class Primitive {
+public:
+    Material material;
+    Primitive(const Material &material);
+    virtual ~Primitive() = default;
+    virtual bool intersect(const Ray& ray, float& t) const = 0;
+    virtual Vec3 getNormal(const Vec3& point) const = 0;
+    virtual BoundingBox getBoundingBox() const = 0;
+};
+
+class Sphere : public Primitive {
 public:
     Vec3 center;
     float radius;
-    Vec3 color;
-    float albedo;
 
-    Sphere(const Vec3& center, float radius, const Vec3& color, float albedo);
-    bool intersect(const Ray& ray, float& t) const;
-    bool intersect(const Ray& ray, float& t_min, float& t_max) const;
+    Sphere(const Vec3& center, float radius, const Material &material);
+    bool intersect(const Ray& ray, float& t) const override;
+    Vec3 getNormal(const Vec3& point) const override;
+    BoundingBox getBoundingBox() const override;
 };
 
-class Plane {
+class Plane : public Primitive {
 public:
     Vec3 normal;
     float d;
-    Vec3 color;
-    float albedo;
 
-    Plane(const Vec3& normal, float d, const Vec3& color, float albedo);
-    bool intersect(const Ray& ray, float& t) const;
+    Plane(const Vec3& normal, float d, const Material &material);
+    bool intersect(const Ray& ray, float& t) const override;
+    Vec3 getNormal(const Vec3& point) const override;
+    BoundingBox getBoundingBox() const override;
 };
 
-class Triangle {
+class Triangle : public Primitive {
 public:
     Vec3 p0, p1, p2;
-    Vec3 color;
-    float albedo;
 
-    Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& color, float albedo);
-    bool intersect(const Ray& ray, float& t) const;
-    BoundingBox getBoundingBox() const;
-    Vec3 getNormal(const Vec3& ray_direction) const;
+    Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Material &material);
+    bool intersect(const Ray& ray, float& t) const override;
+    Vec3 getNormal(const Vec3& point) const override;
+    Vec3 getNormalFromDirection(const Vec3& ray_direction) const;
+    BoundingBox getBoundingBox() const override;
 };
 
 #endif // GEOMETRY_H

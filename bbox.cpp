@@ -1,4 +1,5 @@
-#include "BBox.h"
+#include "bbox.h"
+#include "vec3.h"
 #include "geometry.h"
 #include <algorithm>
 #include <limits>

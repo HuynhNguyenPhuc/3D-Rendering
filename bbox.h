@@ -1,6 +1,7 @@
 #ifndef BBOX_H
 #define BBOX_H
 
+#include "vec3.h"
 #include "geometry.h"
 
 class BoundingBox {

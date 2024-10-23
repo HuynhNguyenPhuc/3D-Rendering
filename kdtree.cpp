@@ -59,12 +59,8 @@ KDNode::KDNode(std::vector<Triangle*>& triangles) : triangles(triangles), left(n
     }
 }
 
-KDTree::KDTree(std::vector<Triangle>& triangles) {
-    std::vector<Triangle*> triangle_pointers;
-    for (auto& triangle: triangles){
-        triangle_pointers.push_back(&triangle);
-    }
-    root = KDTree::build(triangle_pointers, 0);
+KDTree::KDTree(std::vector<Triangle*>& triangles) {
+    root = KDTree::build(triangles, 0);
 }
 
 

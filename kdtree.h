@@ -21,7 +21,7 @@ class KDTree {
     public:
         std::shared_ptr<KDNode> root;
 
-        KDTree(std::vector<Triangle>& triangles);
+        KDTree(std::vector<Triangle*>& triangles);
         bool intersect(const Ray& ray, float& t, Triangle*& hit_triangle) const;
 
     private:

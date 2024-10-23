@@ -1,81 +1,9 @@
 #include "geometry.h"
+#include "vec3.h"
+#include "material.h"
 #include "bbox.h"
 #include <cmath>
 #include <algorithm>
-#include <stdexcept>
-
-
-/*
- * 3D Vector
- */
-Vec3::Vec3() : x(0), y(0), z(0) {}
-
-Vec3::Vec3(float value) : x(value), y(value), z(value) {}
-
-Vec3::Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
-
-float Vec3::operator [] (int idx) const {
-    if (idx == 0) return x;
-    else if (idx == 1) return y;
-    else if (idx == 2) return z;
-    else throw std::out_of_range("Index out of range!");
-}
-
-float &Vec3::operator[](int idx){
-    if (idx == 0) return x;
-    else if (idx == 1) return y;
-    else if (idx == 2) return z;
-    else throw std::out_of_range("Index out of range!");
-}
-
-float Vec3::length() const
-{
-    return std::sqrt(x * x + y * y + z * z);
-}
-
-Vec3 Vec3::operator + (const Vec3& v) const {
-    return Vec3(x + v.x, y + v.y, z + v.z);
-}
-
-void Vec3::operator+=(const Vec3 &v) {
-    x += v.x;
-    y += v.y;   
-    z += v.z;
-}
-
-Vec3 Vec3::operator-() const {
-    return Vec3(-x, -y, -z);
-}
-
-Vec3 Vec3::operator - (const Vec3& v) const {
-    return Vec3(x - v.x, y - v.y, z - v.z);
-}
-
-Vec3 Vec3::operator * (float k) const {
-    return Vec3(x * k, y * k, z * k);
-}
-
-Vec3 Vec3::operator * (const Vec3& v) const {
-    return Vec3(x * v.x, y * v.y, z * v.z);
-}
-
-Vec3 Vec3::operator / (float k) const {
-    return Vec3(x / k, y / k, z / k);
-}
-
-float Vec3::dot(const Vec3& v) const {
-    return x * v.x + y * v.y + z * v.z;
-}
-
-Vec3 Vec3::cross(const Vec3& v) const {
-    return Vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
-}
-
-Vec3 Vec3::normalize() const {
-    float length = std::sqrt(x * x + y * y + z * z);
-    return Vec3(x / length, y / length, z / length);
-}
-
 
 /*
  * Ray
@@ -90,15 +18,24 @@ Vec3 Ray::position(float t) const {
 /*
  * Light
  */
-Light::Light(const Vec3& position, const Vec3& color, float intensity):
-    position(position), color(color), intensity(intensity) {}
+Light::Light(const Vec3 &position, const Vec3& color, float intensity){
+    this->position = position;
+    this->color = color;
+    this->intensity = intensity;
+}
+
+
+/*
+ * Primitive Base Class
+ */
+Primitive::Primitive(const Material &material) : material(material) {}
 
 
 /*
  * Sphere
  */
-Sphere::Sphere(const Vec3& center, float radius, const Vec3& color, float albedo) 
-    : center(center), radius(radius), color(color), albedo(albedo) {}
+Sphere::Sphere(const Vec3& center, float radius, const Material &material) 
+    : Primitive(material), center(center), radius(radius) {}
 
 bool Sphere::intersect(const Ray& ray, float& t) const {
     Vec3 oc = ray.origin - center;
@@ -111,25 +48,21 @@ bool Sphere::intersect(const Ray& ray, float& t) const {
     return t >= 0;
 }
 
-bool Sphere::intersect(const Ray &ray, float &t_min, float &t_max) const {
-    Vec3 oc = ray.origin - center;
-    float a = ray.direction.dot(ray.direction);
-    float b = 2.0f * oc.dot(ray.direction);
-    float c = oc.dot(oc) - radius * radius;
-    float discriminant = b * b - 4 * a * c;
-    if (discriminant < 0) return false;
-    t_min = (-b - std::sqrt(discriminant)) / (2.0f * a);
-    t_max = (-b + std::sqrt(discriminant)) / (2.0f * a);
-    if (t_max < 0) return false;
-    if (t_min < 0) t_min = t_max;
-    return true;
+Vec3 Sphere::getNormal(const Vec3 &point) const {
+    return (point - center).normalize();
 }
+
+BoundingBox Sphere::getBoundingBox() const {
+    Vec3 radiusVec(radius, radius, radius);
+    return BoundingBox(center - radiusVec, center + radiusVec);
+}
+
 
 /*
  * Plane
  */
-Plane::Plane(const Vec3& normal, float d, const Vec3& color, float albedo) 
-    : normal(normal), d(d), color(color), albedo(albedo) {}
+Plane::Plane(const Vec3& normal, float d, const Material &material)
+    : Primitive(material), normal(normal), d(d) {}
 
 bool Plane::intersect(const Ray& ray, float& t) const {
     float denom = normal.dot(ray.direction);
@@ -140,12 +73,23 @@ bool Plane::intersect(const Ray& ray, float& t) const {
     return false;
 }
 
+Vec3 Plane::getNormal(const Vec3 &point) const {
+    return normal;
+}
+
+BoundingBox Plane::getBoundingBox() const {
+    Vec3 minPoint(-INFINITY, -INFINITY, -INFINITY);
+    Vec3 maxPoint(INFINITY, INFINITY, INFINITY);
+    
+    return BoundingBox(minPoint, maxPoint);
+}
+
 
 /*
  * Triangle
  */
-Triangle::Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& color, float albedo) 
-    : p0(p0), p1(p1), p2(p2), color(color), albedo(albedo) {}
+Triangle::Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Material &material)
+    : Primitive(material), p0(p0), p1(p1), p2(p2) {}
 
 bool Triangle::intersect(const Ray& ray, float& t) const {
     Vec3 edge1 = p1 - p0;
@@ -164,6 +108,28 @@ bool Triangle::intersect(const Ray& ray, float& t) const {
     return t > 1e-6;
 }
 
+Vec3 Triangle::getNormal(const Vec3& point) const {
+    Vec3 edge1 = p1 - p0;
+    Vec3 edge2 = p2 - p0;
+    Vec3 normal = edge1.cross(edge2).normalize();
+
+    return normal;
+}
+
+Vec3 Triangle::getNormalFromDirection(const Vec3 &ray_direction) const
+{
+    Vec3 edge1 = p1 - p0;
+    Vec3 edge2 = p2 - p0;
+    Vec3 normal = edge1.cross(edge2).normalize();
+
+    float epsilon = 1e-6;
+    if (normal.dot(-ray_direction) < epsilon) {
+        normal = -normal;
+    }
+
+    return normal;
+}
+
 BoundingBox Triangle::getBoundingBox() const {
     Vec3 minVec(
         std::min(std::min(p0.x, p1.x), p2.x),
@@ -180,15 +146,4 @@ BoundingBox Triangle::getBoundingBox() const {
     return BoundingBox(minVec, maxVec);
 }
 
-Vec3 Triangle::getNormal(const Vec3& ray_direction) const {
-    Vec3 edge1 = p1 - p0;
-    Vec3 edge2 = p2 - p0;
-    Vec3 normal = edge1.cross(edge2).normalize();
 
-    float epsilon = 1e-6;
-    if (normal.dot(-ray_direction) < epsilon) {
-        normal = -normal;
-    }
-
-    return normal;
-}

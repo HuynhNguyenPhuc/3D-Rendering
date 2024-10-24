@@ -101,7 +101,7 @@ void whitted_ray_tracing() {
     std::vector<Primitive*> primitive_pointers;
 
     Vec3 primitive_color(0.0f, 0.5f, 0.0f);
-    Material material(primitive_color, 0.6f, 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE); // Set as REFRACTIVE
+    Material material(primitive_color, Vec3(1.0f), 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE); // Set as REFRACTIVE
 
     for (size_t i = 0; i < vertexArray.size(); i += 24) {
         Vec3 v0(vertexArray[i], vertexArray[i+1], vertexArray[i+2]);
@@ -110,7 +110,7 @@ void whitted_ray_tracing() {
         primitive_pointers.push_back(new Triangle(v0, v1, v2, material));
     }
 
-    Material groundMaterial(Vec3(0.5f, 0.5f, 0.5f), 0.6f, 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE);
+    Material groundMaterial(Vec3(0.5f, 0.5f, 0.5f), Vec3(1.0f), 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE);
     primitive_pointers.push_back(new Plane(Vec3(0.0f, 0.75f, 0.0f), 2.0f, groundMaterial));
 
     PrimitiveTree primitives(primitive_pointers);

@@ -124,14 +124,14 @@ void whitted_ray_tracing() {
             Vec3 color = colors[index];
             float radius = radii[index];
             MaterialType matType = materialTypes[index];
-            Material material(color, 0.6f, 0.3f, 0.5f, 0.5f, (matType == MaterialType::REFRACTIVE ? 0.8f : 0.0f), 1.5f, 32.0f, matType);
+            Material material(color, Vec3(1.0f), 0.3f, 0.5f, 0.5f, (matType == MaterialType::REFRACTIVE ? 0.8f : 0.0f), 1.5f, 32.0f, matType);
 
             Vec3 position(-3.5f + j * spacing, -1.5f, -8.0f + i * spacing);
             primitivesList.push_back(new Sphere(position, radius, material));
         }
     }
 
-    Material groundMaterial(Vec3(0.5f, 0.5f, 0.5f), 0.6f, 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE);
+    Material groundMaterial(Vec3(0.5f, 0.5f, 0.5f), Vec3(1.0f), 0.3f, 0.5f, 0.5f, 0.0f, 1.0f, 16.0f, MaterialType::NONE);
     primitivesList.push_back(new Plane(Vec3(0.0f, 0.75f, 0.0f), 2.0f, groundMaterial));
 
     PrimitiveTree primitives(primitivesList);

@@ -2,7 +2,7 @@
 #include "vec3.h"
 
 
-Material::Material(const Vec3 &color, float albedo, float kA, float kD, float kS, float kT, float ior, float shininess, MaterialType type){
+Material::Material(const Vec3 &color, const Vec3& albedo, float kA, float kD, float kS, float kT, float ior, float shininess, MaterialType type){
     this->color = color;
     this->albedo = albedo;
     this->kA = kA;

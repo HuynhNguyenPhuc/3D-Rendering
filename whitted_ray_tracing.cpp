@@ -16,7 +16,7 @@
 
 const int WIDTH = 920;
 const int HEIGHT = 640;
-const int MAX_BOUNCES = 150;
+const int MAX_BOUNCES = 50;
 const Vec3 BACKGROUND_COLOR = Vec3(0.0f, 0.0f, 0.0f);
 
 Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector<Light*>& lights, int depth) {
@@ -41,10 +41,11 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
             Vec3 reflected_color = cast_ray(reflected_ray, primitives, lights, depth + 1);
 
             // Compute refraction direction
-            Vec3 refracted_direction = refraction(ray.direction, normal, hitPrimitive->material.ior);
+            bool isInside = false;
+            Vec3 refracted_direction = refraction(ray.direction, normal, hitPrimitive->material.ior, isInside);
             Vec3 refracted_color(0.0f);
             if (refracted_direction != Vec3(0.0f)) {
-                Ray refracted_ray(hit_point - normal * 1e-3, refracted_direction);
+                Ray refracted_ray(hit_point + normal * (2*(int) isInside - 1) * 1e-3, refracted_direction);
                 refracted_color = cast_ray(refracted_ray, primitives, lights, depth + 1);
             }
 
@@ -54,7 +55,7 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
             break;
         }
         case REFLECTIVE: {
-            Vec3 reflected_direction = (ray.direction - normal * ray.direction.dot(normal) * 2).normalize();
+            Vec3 reflected_direction = reflection(ray.direction, normal);
             Ray reflected_ray(hit_point + normal * 1e-3, reflected_direction);
             color = cast_ray(reflected_ray, primitives, lights, depth + 1);
             break;
@@ -72,9 +73,9 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
                 bool isInShadow = primitives.intersect(shadow_ray, tShadow, shadowHitPrimitive) && tShadow * tShadow < light_distance_2;
 
                 if (!isInShadow) {
-                    Vec3 diffuse = hitPrimitive->material.color * std::max(0.0f, light_direction.dot(normal)) * light_intensity;
+                    Vec3 diffuse = hitPrimitive->material.color * hitPrimitive->material.kD * light_intensity * std::max(0.0f, light_direction.dot(normal));
                     Vec3 reflected_direction = (ray.direction - normal * ray.direction.dot(normal) * 2).normalize();
-                    Vec3 specular = Vec3(1.0f) * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitPrimitive->material.shininess) * light_intensity;
+                    Vec3 specular = Vec3(1.0f) * hitPrimitive->material.kS * light_intensity * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitPrimitive->material.shininess);
                     color += diffuse + specular;
                 }
             }

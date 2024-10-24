@@ -39,7 +39,7 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
             Vec3 refracted_direction = refraction(ray.direction, normal, hitprimitive->material.ior);
             Vec3 refracted_color(0.0f);
             if (refracted_direction != Vec3(0.0f)) {
-                Ray refracted_ray(hit_point - normal * 1e-3, refracted_direction);
+                Ray refracted_ray(hit_point + normal * (2*(int) isInside - 1) * 1e-3, refracted_direction);
                 refracted_color = cast_ray(refracted_ray, primitives, lights, depth + 1);
             }
 
@@ -66,9 +66,9 @@ Vec3 cast_ray(const Ray& ray, const PrimitiveTree& primitives, const std::vector
                 bool isInShadow = primitives.intersect(shadow_ray, tShadow, shadowHitprimitive) && tShadow * tShadow < light_distance_2;
 
                 if (!isInShadow) {
-                    Vec3 diffuse = hitprimitive->material.color * std::max(0.0f, light_direction.dot(normal)) * light_intensity;
+                    Vec3 diffuse = hitprimitive->material.color * hitprimitive->material.kD * std::max(0.0f, light_direction.dot(normal)) * light_intensity;
                     Vec3 reflected_direction = reflection(ray.direction, normal);
-                    Vec3 specular = Vec3(1.0f) * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitprimitive->material.shininess) * light_intensity;
+                    Vec3 specular = Vec3(1.0f) * hitprimitive->material.kS * std::pow(std::max(0.0f, reflected_direction.dot(-light_direction)), hitprimitive->material.shininess) * light_intensity;
                     color += diffuse + specular;
                 }
             }

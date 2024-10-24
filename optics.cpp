@@ -15,18 +15,20 @@ Vec3 reflection(const Vec3& incident, const Vec3& normal) {
     return (I - N * 2.0f * I.dot(N)).normalize();
 }
 
-Vec3 refraction(const Vec3& incident, const Vec3& normal, float ior) {
+Vec3 refraction(const Vec3& incident, const Vec3& normal, float ior, bool& isInside) {
     Vec3 I = incident.normalize();
     Vec3 N = normal.normalize();
 
     float cos_i = -I.dot(N);
     float eta = ior;
+    isInside = false;
 
     // Case: The ray is inside the object
     if (cos_i < 0.0f) {
         N = -N;
         cos_i = -cos_i;
         eta = 1.0f / ior;
+        isInside = true;
     }
 
     float sin2_i = 1.0f - cos_i * cos_i;
@@ -61,7 +63,6 @@ float fresnel(const Vec3& incident, const Vec3& normal, float ior) {
     if (sin2_t - 1.0f > 1e-6) {
         return 1.0f;
     }
-
 
     float cos_t = std::sqrt(std::max(1.0f - sin2_t, 0.0f));
     

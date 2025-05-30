@@ -162,11 +162,8 @@ Vec3 Triangle::getTextureCoordinates() const {
     return wrap_around(result);
 }
 
-Vec3 Triangle::getNormalFromDirection(const Vec3& ray_direction) const {
+Vec3 Triangle::getFaceNormal() const {
     Vec3 normal = (p1 - p0).cross(p2 - p0).normalize();
-    if (normal.dot(-ray_direction) < 1e-6) {
-        normal = -normal;
-    }
     return normal;
 }
 

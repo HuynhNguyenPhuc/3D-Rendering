@@ -7,26 +7,35 @@
 #include <memory>
 
 class KDNode {
-    public:
-        BoundingBox bbox;
-        std::vector<Triangle*> triangles;
-        std::shared_ptr<KDNode> left;
-        std::shared_ptr<KDNode> right;
+public:
+    BoundingBox bbox;
+    std::shared_ptr<KDNode> left;
+    std::shared_ptr<KDNode> right;
+    
+    size_t triangle_start_index; 
+    size_t triangle_count;
 
-        KDNode();
-        KDNode(std::vector<Triangle*>& triangles);
+    KDNode();
+
+    bool isLeaf() const {
+        return left == nullptr && right == nullptr;
+    }
 };
 
 class KDTree {
-    public:
-        std::shared_ptr<KDNode> root;
+public:
+    std::shared_ptr<KDNode> root;
 
-        KDTree(std::vector<Triangle*>& triangles);
-        bool intersect(const Ray& ray, float& t, Triangle*& hit_triangle) const;
+    KDTree(std::vector<Triangle*>& triangles_list);
 
-    private:
-        std::shared_ptr<KDNode> build(std::vector<Triangle*> triangles, int depth);
-        bool intersectNode(const std::shared_ptr<KDNode> node, const Ray& ray, float& t, Triangle*& hit_triangle) const;
+    bool intersect(const Ray& ray, float& t, Triangle*& hit_triangle) const;
+
+private:
+    std::vector<Triangle*>& all_triangles; 
+
+    std::shared_ptr<KDNode> build(size_t start, size_t end, int depth);
+    
+    bool intersectNode(const std::shared_ptr<KDNode> node, const Ray& ray, float& t, Triangle*& hit_triangle) const;
 };
 
 #endif // KDTREE_H

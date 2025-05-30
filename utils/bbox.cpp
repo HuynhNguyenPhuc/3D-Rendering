@@ -50,6 +50,26 @@ void BoundingBox::expand(const Vec3& p) {
     max.z = std::max(max.z, p.z);
 }
 
+bool BoundingBox::intersect(const Ray& ray, float& t_min) const {
+    t_min = std::numeric_limits<float>::lowest();
+    float t_max = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < 3; ++i) {
+        float invD = 1.0f / ray.direction[i];
+        float t0 = (min[i] - ray.origin[i]) * invD;
+        float t1 = (max[i] - ray.origin[i]) * invD;
+
+        if (invD < 0.0f) std::swap(t0, t1);
+
+        t_min = std::max(t_min, t0);
+        t_max = std::min(t_max, t1);
+
+        if (t_max <= t_min) return false;
+    }
+
+    return true;
+}
+
 bool BoundingBox::intersect(const Ray& ray, float& t_min, float& t_max) const {
     t_min = std::numeric_limits<float>::lowest();
     t_max = std::numeric_limits<float>::max();

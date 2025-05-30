@@ -86,7 +86,7 @@ public:
     bool intersect(const Ray& ray, float& t) const override;
     Vec3 getNormal(const Vec3& hit_point) const override;
     Vec3 getTextureCoordinates() const;
-    Vec3 getNormalFromDirection(const Vec3& ray_direction) const;
+    Vec3 getFaceNormal() const;
     BoundingBox getBoundingBox() const override;
 };
 

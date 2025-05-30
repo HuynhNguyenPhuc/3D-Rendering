@@ -16,6 +16,7 @@ public:
     float getSurfaceArea() const;
     int getLongestAxis() const;
 
+    bool intersect(const Ray& ray, float& t_min) const;
     bool intersect(const Ray& ray, float& t_min, float& t_max) const;
     void expand(const Vec3& p);
     BoundingBox expand(const BoundingBox& other) const;

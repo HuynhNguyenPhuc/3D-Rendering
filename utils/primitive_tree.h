@@ -9,25 +9,33 @@
 class PrimitiveNode {
 public:
     BoundingBox bbox;
-    std::vector<Primitive*> primitives;
     std::shared_ptr<PrimitiveNode> left;
-    std::shared_ptr<PrimitiveNode> right; 
+    std::shared_ptr<PrimitiveNode> right;
+
+    size_t primitive_start_index; 
+    size_t primitive_count;
 
     PrimitiveNode();
-    PrimitiveNode(const std::vector<Primitive*>& primitives);
+
+    bool isLeaf() const {
+        return left == nullptr && right == nullptr;
+    }
 };
 
 class PrimitiveTree {
 public:
     std::shared_ptr<PrimitiveNode> root;
 
-    PrimitiveTree(std::vector<Primitive*>& primitives);
+    PrimitiveTree(std::vector<Primitive*>& primitives_list);
 
     bool intersect(const Ray& ray, float& t, Primitive*& hitPrimitive) const;
 
 private:
-    std::shared_ptr<PrimitiveNode> build(std::vector<Primitive*>& primitives, int depth);
+    std::vector<Primitive*>& all_primitives; 
+
+    std::shared_ptr<PrimitiveNode> build(size_t start, size_t end, int depth);
+    
     bool intersectNode(const std::shared_ptr<PrimitiveNode> node, const Ray& ray, float& t, Primitive*& hitPrimitive) const;
 };
 
-#endif // PRIMITIVE_TREE_H 
+#endif // PRIMITIVE_TREE_H

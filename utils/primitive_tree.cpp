@@ -2,157 +2,220 @@
 #include <limits>
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
-/*
- * Support functions
- */
+const int MAX_DEPTH = 20;
+const size_t MIN_PRIMITIVES_PER_LEAF = 4;
+
 namespace {
-    float calculateSAH(const BoundingBox& left, const BoundingBox& right, int numLeft, int numRight) {
-        float leftArea = left.getSurfaceArea();
-        float rightArea = right.getSurfaceArea();
-        float totalArea = left.expand(right).getSurfaceArea();
+    float calculateSAH(const BoundingBox& left_bbox, const BoundingBox& right_bbox, int numLeft, int numRight, const BoundingBox& parent_bbox) {
+        /*
+        Surface Area Heuristic (SAH) cost.
+        */
+        if (numLeft == 0 || numRight == 0) {
+            return static_cast<float>(numLeft + numRight); 
+        }
 
-        float pLeft = leftArea / totalArea;
-        float pRight = rightArea / totalArea;
+        float leftArea = left_bbox.getSurfaceArea();
+        float rightArea = right_bbox.getSurfaceArea();
+        float totalParentArea = parent_bbox.getSurfaceArea();
 
-        return 1.0f + pLeft * numLeft + pRight * numRight;
+        if (totalParentArea <= 0.0f) {
+            return static_cast<float>(numLeft + numRight);
+        }
+
+        float pLeft = leftArea / totalParentArea;
+        float pRight = rightArea / totalParentArea;
+        
+        float cost_traversal = 1.0f; 
+        return cost_traversal + pLeft * numLeft + pRight * numRight;
     }
 }
 
+BoundingBox merge(const std::vector<Primitive*>& primitives, size_t start_idx, size_t end_idx) {
+    if (start_idx >= end_idx || (start_idx == 0 && end_idx == 0 && primitives.empty())) {
+        return BoundingBox();
+    }
 
-BoundingBox merge(const std::vector<Primitive*>& primitives) {
-    if (primitives.empty()) {
-        throw std::invalid_argument("Primitive list cannot be empty");
+    if (start_idx >= primitives.size() || end_idx > primitives.size()) {
+        throw std::out_of_range("Index Out of Bounds!");
     }
 
     Vec3 _min(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
     Vec3 _max(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest());
 
-    for (const auto& primitive : primitives) {
+    for (size_t i = start_idx; i < end_idx; ++i) {
+        const auto& primitive = primitives[i];
         BoundingBox bbox = primitive->getBoundingBox();
-        for (int i = 0; i < 3; ++i) {
-            _min[i] = std::min(_min[i], bbox.min[i]);
-            _max[i] = std::max(_max[i], bbox.max[i]);
+        for (int j = 0; j < 3; ++j) {
+            _min[j] = std::min(_min[j], bbox.min[j]);
+            _max[j] = std::max(_max[j], bbox.max[j]);
         }
     }
-
     return BoundingBox(_min, _max);
 }
 
 //-----------------------------------------------------//
 
-PrimitiveNode::PrimitiveNode() : left(nullptr), right(nullptr) {}
+PrimitiveNode::PrimitiveNode() 
+    : left(nullptr), right(nullptr), primitive_start_index(0), primitive_count(0) {
+}
 
-PrimitiveNode::PrimitiveNode(const std::vector<Primitive*>& primitives) 
-    : primitives(primitives), left(nullptr), right(nullptr) {
-    if (!primitives.empty()) {
-        bbox = merge(primitives);
+PrimitiveTree::PrimitiveTree(std::vector<Primitive*>& primitives_list)
+    : all_primitives(primitives_list) {
+    if (all_primitives.empty()) {
+        root = nullptr;
+    } else {
+        root = build(0, all_primitives.size(), 0);
     }
 }
 
-PrimitiveTree::PrimitiveTree(std::vector<Primitive*>& primitives) {
-    root = PrimitiveTree::build(primitives, 0);
-}
+std::shared_ptr<PrimitiveNode> PrimitiveTree::build(size_t start, size_t end, int depth) {
+    auto node = std::make_shared<PrimitiveNode>();
+    size_t num_primitives_in_node = end - start;
 
-std::shared_ptr<PrimitiveNode> PrimitiveTree::build(std::vector<Primitive*>& primitives, int depth) {
-    if (primitives.empty()) return nullptr;
+    node->bbox = merge(all_primitives, start, end);
 
-    int maxDepth = 8 + 1.3 * log2(primitives.size());
-
-    if (primitives.size() <= 2 || depth >= maxDepth) {
-        return std::make_shared<PrimitiveNode>(primitives);
+    if (num_primitives_in_node <= MIN_PRIMITIVES_PER_LEAF || depth >= MAX_DEPTH) {
+        node->primitive_start_index = start;
+        node->primitive_count = num_primitives_in_node;
+        return node;
     }
 
-    int bestAxis = -1;
-    float bestCost = std::numeric_limits<float>::max();
-    std::vector<Primitive*> leftPrimitives, rightPrimitives;
+    float best_sah_cost = std::numeric_limits<float>::max();
+    int best_split_axis = -1;
+    size_t best_split_index = start;
+
+    BoundingBox centroid_bounds = BoundingBox();
+    for(size_t i = start; i < end; ++i) {
+        centroid_bounds.expand(all_primitives[i]->getBoundingBox().center());
+    }
+
 
     for (int axis = 0; axis < 3; ++axis) {
-        std::sort(primitives.begin(), primitives.end(), [axis](Primitive*& a, Primitive*& b) {
-            return a->getBoundingBox().center()[axis] < b->getBoundingBox().center()[axis];
-        });
+        if (centroid_bounds.min[axis] == centroid_bounds.max[axis] && num_primitives_in_node > 1) {
+            continue;
+        }
+        
+        std::sort(all_primitives.begin() + start, all_primitives.begin() + end,
+            [axis](const Primitive* a, const Primitive* b) {
+                return a->getBoundingBox().center()[axis] < b->getBoundingBox().center()[axis];
+            }
+        );
 
-        for (size_t i = 1; i < primitives.size(); ++i) {
-            std::vector<Primitive*> left(primitives.begin(), primitives.begin() + i);
-            std::vector<Primitive*> right(primitives.begin() + i, primitives.end());
+        std::vector<BoundingBox> right_accumulated_bboxes(num_primitives_in_node);
+        BoundingBox current_right_bbox_accum = BoundingBox();
+        
+        for (int i = num_primitives_in_node - 1; i >= 0; --i) {
+            current_right_bbox_accum.expand(all_primitives[start + i]->getBoundingBox());
+            right_accumulated_bboxes[i] = current_right_bbox_accum;
+        }
 
-            BoundingBox leftBBox = merge(left);
-            BoundingBox rightBBox = merge(right);
-
-            float sahCost = calculateSAH(leftBBox, rightBBox, left.size(), right.size());
-
-            if (sahCost < bestCost) {
-                bestCost = sahCost;
-                bestAxis = axis;
-                leftPrimitives = left;
-                rightPrimitives = right;
+        BoundingBox left_bbox_accum = BoundingBox();
+        for (size_t i = 0; i < num_primitives_in_node - 1; ++i) {
+            left_bbox_accum.expand(all_primitives[start + i]->getBoundingBox());
+            
+            BoundingBox right_bbox_to_consider = right_accumulated_bboxes[i + 1];
+            
+            int num_left = i + 1;
+            int num_right = num_primitives_in_node - num_left;
+            
+            float sah_cost = calculateSAH(left_bbox_accum, right_bbox_to_consider, num_left, num_right, node->bbox);
+            
+            if (sah_cost < best_sah_cost) {
+                best_sah_cost = sah_cost;
+                best_split_axis = axis;
+                best_split_index = start + i + 1;
             }
         }
     }
 
-    if (bestAxis == -1) {
-        return std::make_shared<PrimitiveNode>(primitives);
+    float cost_if_leaf = static_cast<float>(num_primitives_in_node); 
+    
+    if (best_split_axis == -1 || best_sah_cost >= cost_if_leaf - 1e-4f) {
+        node->primitive_start_index = start;
+        node->primitive_count = num_primitives_in_node;
+        return node;
     }
 
-    auto leftNode = build(leftPrimitives, depth + 1);
-    auto rightNode = build(rightPrimitives, depth + 1);
+    std::nth_element(
+        all_primitives.begin() + start, 
+        all_primitives.begin() + best_split_index,
+        all_primitives.begin() + end,
+        [best_split_axis](const Primitive* a, const Primitive* b) {
+            return a->getBoundingBox().center()[best_split_axis] < b->getBoundingBox().center()[best_split_axis];
+        }
+    );
 
-    auto node = std::make_shared<PrimitiveNode>();
-    node->bbox = leftNode->bbox.expand(rightNode->bbox);
-    node->left = leftNode;
-    node->right = rightNode;
+    node->left = build(start, best_split_index, depth + 1);
+    node->right = build(best_split_index, end, depth + 1);
 
     return node;
 }
 
 // Intersection traversal
 bool PrimitiveTree::intersect(const Ray& ray, float& t, Primitive*& hitPrimitive) const {
+    if (!root) return false;
     t = std::numeric_limits<float>::max();
+    hitPrimitive = nullptr;
     return intersectNode(root, ray, t, hitPrimitive);
 }
 
 bool PrimitiveTree::intersectNode(const std::shared_ptr<PrimitiveNode> node, const Ray& ray, float& t, Primitive*& hitPrimitive) const {
     if (!node) return false;
 
-    float tmin, tmax;
-    if (!node->bbox.intersect(ray, tmin, tmax)) return false;
+    float t_box_min;
+    if (!node->bbox.intersect(ray, t_box_min) || t_box_min >= t) {
+        return false;
+    }
 
-    if (tmin - t > 1e-6) return false;
-
-    // If it is the leaf node, check interesections with its primitives
-    if (!node->left && !node->right) {
-        bool hit = false;
-        for (const auto& primitive: node->primitives) {
-            float curr_t;
-            if (primitive->intersect(ray, curr_t) && curr_t < t) {
-                t = curr_t;
-                hitPrimitive = primitive;
-                hit = true;
+    if (node->isLeaf()) {
+        bool foundHitInLeaf = false;
+        for (size_t i = 0; i < node->primitive_count; ++i) {
+            Primitive* current_primitive = all_primitives[node->primitive_start_index + i];
+            float current_t_primitive;
+            if (current_primitive->intersect(ray, current_t_primitive) && current_t_primitive < t) {
+                t = current_t_primitive;
+                hitPrimitive = current_primitive;
+                foundHitInLeaf = true;
             }
         }
-        return hit;
+        return foundHitInLeaf;
     }
 
-    bool hit = false;
+    std::shared_ptr<PrimitiveNode> first_child_to_visit = node->left;
+    std::shared_ptr<PrimitiveNode> second_child_to_visit = node->right;
 
-    std::shared_ptr<PrimitiveNode> firstNode, secondNode;
-    if (ray.direction[node->bbox.getLongestAxis()] < 0) {
-        firstNode = node->right;
-        secondNode = node->left;
+    float tmin_left_child, tmin_right_child;
+    bool intersects_left_child = first_child_to_visit->bbox.intersect(ray, tmin_left_child);
+    bool intersects_right_child = second_child_to_visit->bbox.intersect(ray, tmin_right_child);
+
+    if (intersects_left_child && intersects_right_child) {
+        if (tmin_left_child > tmin_right_child) {
+            std::swap(first_child_to_visit, second_child_to_visit);
+        }
+    } else if (!intersects_left_child && intersects_right_child) {
+        first_child_to_visit = node->right;
+        second_child_to_visit = nullptr;
+    } else if (intersects_left_child && !intersects_right_child) {
+        second_child_to_visit = nullptr;
     } else {
-        firstNode = node->left;
-        secondNode = node->right;
+        return false;
     }
 
-    // Traverse the nearer child first
-    if (intersectNode(firstNode, ray, t, hitPrimitive)) {
-        hit = true;
+
+    bool hit1 = false;
+    if (first_child_to_visit) {
+        hit1 = intersectNode(first_child_to_visit, ray, t, hitPrimitive);
     }
 
-    // Traverse the further child only if not hit the first child
-    if (!hit && intersectNode(secondNode, ray, t, hitPrimitive)) {
-        hit = true;
+    bool hit2 = false;
+    if (second_child_to_visit) { 
+        float t_second_child_box_min;
+        if (second_child_to_visit->bbox.intersect(ray, t_second_child_box_min) && t_second_child_box_min < t) {
+            hit2 = intersectNode(second_child_to_visit, ray, t, hitPrimitive);
+        }
     }
 
-    return hit;
+    return hit1 || hit2;
 }

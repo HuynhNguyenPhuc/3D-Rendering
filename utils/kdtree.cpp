@@ -7,15 +7,17 @@
 /*
  * Support functions
  */
-float calculateSAH(const BoundingBox& left, const BoundingBox& right, int numLeft, int numRight) {
-    float leftArea = left.getSurfaceArea();
-    float rightArea = right.getSurfaceArea();
-    float totalArea = left.expand(right).getSurfaceArea();
+namespace {
+    float calculateSAH(const BoundingBox& left, const BoundingBox& right, int numLeft, int numRight) {
+        float leftArea = left.getSurfaceArea();
+        float rightArea = right.getSurfaceArea();
+        float totalArea = left.expand(right).getSurfaceArea();
 
-    float pLeft = leftArea / totalArea;   
-    float pRight = rightArea / totalArea;
+        float pLeft = leftArea / totalArea;   
+        float pRight = rightArea / totalArea;
 
-    return 1.0f + pLeft * numLeft + pRight * numRight;
+        return 1.0f + pLeft * numLeft + pRight * numRight;
+    }
 }
 
 BoundingBox merge(std::vector<Triangle*>& triangles){
@@ -85,7 +87,7 @@ std::shared_ptr<KDNode> KDTree::build(std::vector<Triangle*> triangles, int dept
             return a->getBoundingBox().center()[axis] < b->getBoundingBox().center()[axis];
         });
 
-        for (int i = 1; i < triangles.size(); i++) {
+        for (size_t i = 1; i < triangles.size(); i++) {
             std::vector<Triangle*> left(triangles.begin(), triangles.begin() + i);
             std::vector<Triangle*> right(triangles.begin() + i, triangles.end());
 

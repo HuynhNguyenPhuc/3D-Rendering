@@ -47,7 +47,7 @@ float fresnel(const Vec3& incident, const Vec3& normal, float ior) {
     Vec3 I = incident.normalize();
     Vec3 N = normal.normalize();
 
-    float cos_i = std::min(std::max(-incident.dot(normal), -1.0f), 1.0f);
+    float cos_i = std::min(std::max(-I.dot(N), -1.0f), 1.0f);
     float eta = ior;
 
     if (cos_i < 0.0f) {
@@ -59,16 +59,14 @@ float fresnel(const Vec3& incident, const Vec3& normal, float ior) {
     float sin2_i = 1.0f - cos_i * cos_i;
     float sin2_t = eta * eta * sin2_i;
 
-    // Case: Total internal reflection
-    if (sin2_t - 1.0f > 1e-6) {
+    if (sin2_t > 1.0f) {
         return 1.0f;
     }
 
     float cos_t = std::sqrt(std::max(1.0f - sin2_t, 0.0f));
     
-    // Fresnel-Schlick approximation
-    float rs = (eta * cos_i - cos_t) / ((eta * cos_i + cos_t));
-    float rp = (eta * cos_i - cos_t) / ((eta * cos_i) + cos_t);
+    float rs = (eta * cos_i - cos_t) / (eta * cos_i + cos_t);
+    float rp = (cos_i - eta * cos_t) / (cos_i + eta * cos_t);
     
     return (rs * rs + rp * rp) / 2.0f;
 }

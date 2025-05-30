@@ -22,6 +22,9 @@ public:
     MaterialType type;  // Type of material (refraction, reflection, or none)
 
     Material(const Vec3& color, const Vec3& albedo, float kA, float kD, float kS, float kT, float ior, float shininess, MaterialType type);
+    Material(const Vec3& color);
+    Material(const Vec3& color, float kA, float kD, float kS, float shininess);
+    Material(const Vec3& color, float kA, float kD, float kS, float ior, float shininess, MaterialType type);
 };
 
 #endif // MATERIAL_H

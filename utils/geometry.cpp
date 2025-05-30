@@ -1,6 +1,4 @@
 #include "geometry.h"
-#include "vec3.h"
-#include "material.h"
 #include "bbox.h"
 #include <cmath>
 #include <algorithm>
@@ -18,18 +16,24 @@ Vec3 Ray::position(float t) const {
 /*
  * Light
  */
-Light::Light(const Vec3 &position, const Vec3& color, float intensity){
+Light::Light(const Vec3 &position, const Vec3& color, float intensity) {
     this->position = position;
     this->color = color;
     this->intensity = intensity;
 }
-
 
 /*
  * Primitive Base Class
  */
 Primitive::Primitive(const Material &material) : material(material) {}
 
+void Primitive::setHitPoint(const Vec3 &hit_point) {
+    return;
+}
+
+Vec3 Primitive::getTextureCoordinates() const{
+    return Vec3();
+}
 
 /*
  * Sphere
@@ -48,15 +52,34 @@ bool Sphere::intersect(const Ray& ray, float& t) const {
     return t >= 0;
 }
 
-Vec3 Sphere::getNormal(const Vec3 &point) const {
-    return (point - center).normalize();
+bool Sphere::intersect(const Ray& ray, float& t0, float& t1) {
+    Vec3 oc = ray.origin - center;
+    float a = ray.direction.dot(ray.direction);
+    float b = 2.0f * oc.dot(ray.direction);
+    float c = oc.dot(oc) - radius * radius;
+    float discriminant = b * b - 4.0f * a * c;
+
+    if (discriminant < 0.0f) return false;
+
+    float sqrtDiscriminant = std::sqrt(discriminant);
+    float inv2a = 0.5f / a;
+
+    t0 = (-b - sqrtDiscriminant) * inv2a;
+    t1 = (-b + sqrtDiscriminant) * inv2a;
+
+    if (t0 > t1) std::swap(t0, t1);
+
+    return true;
+}
+
+Vec3 Sphere::getNormal(const Vec3 &hit_point) const {
+    return (hit_point - center).normalize();
 }
 
 BoundingBox Sphere::getBoundingBox() const {
     Vec3 radiusVec(radius, radius, radius);
     return BoundingBox(center - radiusVec, center + radiusVec);
 }
-
 
 /*
  * Plane
@@ -73,7 +96,7 @@ bool Plane::intersect(const Ray& ray, float& t) const {
     return false;
 }
 
-Vec3 Plane::getNormal(const Vec3 &point) const {
+Vec3 Plane::getNormal(const Vec3 &hit_point) const {
     return normal;
 }
 
@@ -84,49 +107,66 @@ BoundingBox Plane::getBoundingBox() const {
     return BoundingBox(minPoint, maxPoint);
 }
 
-
 /*
  * Triangle
  */
-Triangle::Triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Material &material)
-    : Primitive(material), p0(p0), p1(p1), p2(p2) {}
+void Triangle::setHitPoint(const Vec3& hit_point) {
+    Vec3 v0 = p1 - p0;
+    Vec3 v1 = p2 - p0;
+    Vec3 v2 = hit_point - p0;
 
+    float d00 = v0.dot(v0);
+    float d01 = v0.dot(v1);
+    float d11 = v1.dot(v1);
+    float d20 = v2.dot(v0);
+    float d21 = v2.dot(v1);
+
+    float denom = d00 * d11 - d01 * d01;
+    if (std::abs(denom) < 1e-8f) {
+        u = v = 0.0f;
+        return;
+    }
+
+    float invDenom = 1.0f / denom;
+    u = (d11 * d20 - d01 * d21) * invDenom;
+    v = (d00 * d21 - d01 * d20) * invDenom;
+}
+
+// Möller–Trumbore algorithm for intersection points
 bool Triangle::intersect(const Ray& ray, float& t) const {
     Vec3 edge1 = p1 - p0;
     Vec3 edge2 = p2 - p0;
     Vec3 h = ray.direction.cross(edge2);
     float a = edge1.dot(h);
     if (a > -1e-6 && a < 1e-6) return false;
+
     float f = 1.0f / a;
     Vec3 s = ray.origin - p0;
-    float u = f * s.dot(h);
+    u = f * s.dot(h);
     if (u < 0.0f || u > 1.0f) return false;
+
     Vec3 q = s.cross(edge1);
-    float v = f * ray.direction.dot(q);
+    v = f * ray.direction.dot(q);
     if (v < 0.0f || u + v > 1.0f) return false;
+
     t = f * edge2.dot(q);
     return t > 1e-6;
 }
 
-Vec3 Triangle::getNormal(const Vec3& point) const {
-    Vec3 edge1 = p1 - p0;
-    Vec3 edge2 = p2 - p0;
-    Vec3 normal = edge1.cross(edge2).normalize();
-
-    return normal;
+Vec3 Triangle::getNormal(const Vec3& hit_point) const {
+    return (n1 * (1 - u - v) + n2 * u + n3 * v).normalize();
 }
 
-Vec3 Triangle::getNormalFromDirection(const Vec3 &ray_direction) const
-{
-    Vec3 edge1 = p1 - p0;
-    Vec3 edge2 = p2 - p0;
-    Vec3 normal = edge1.cross(edge2).normalize();
+Vec3 Triangle::getTextureCoordinates() const {
+    Vec3 result = st1 * (1 - u - v) + st2 * u + st3 * v;
+    return wrap_around(result);
+}
 
-    float epsilon = 1e-6;
-    if (normal.dot(-ray_direction) < epsilon) {
+Vec3 Triangle::getNormalFromDirection(const Vec3& ray_direction) const {
+    Vec3 normal = (p1 - p0).cross(p2 - p0).normalize();
+    if (normal.dot(-ray_direction) < 1e-6) {
         normal = -normal;
     }
-
     return normal;
 }
 
@@ -145,5 +185,3 @@ BoundingBox Triangle::getBoundingBox() const {
 
     return BoundingBox(minVec, maxVec);
 }
-
-

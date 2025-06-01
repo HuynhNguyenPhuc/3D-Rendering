@@ -1,6 +1,6 @@
-# Rendering Techniques
+# Ray Tracing Techniques
 
-This repository contains several fundamental rendering techniques implemented in C++. The techniques, ranging from basic ray tracing to advanced methods like global illumination and volume rendering.
+This repository contains several fundamental ray tracing techniques implemented in C++. The techniques, ranging from basic ray tracing to advanced methods like global illumination and volume rendering.
 
 ## Implemented Techniques
 
@@ -11,8 +11,16 @@ This repository contains several fundamental rendering techniques implemented in
 
 ## Results
 
-### Ray Tracing with Blinn-Phong Shading  
-![Ray Tracing with Blinn Phong Shading](results/rendering.png)
+### Ray Tracing with Blinn-Phong Shading
+<p align="center">
+  <img src="results/sphere.png" width="75%" alt="Sphere"/>
+</p>
+<p align="center"><i>Sphere on the ground</i></p>
+<p align="center">
+  <img src="results/barrel.png" width="45%" alt="Barrel"/>
+  <img src="results/motocompo.png" width="45%" alt="Motocompo"/>
+</p>
+<p align="center"><i>Left: Barrel | Right: Motocompo</i></p>
 
 ### Whitted Ray Tracing 
 ![Whitted Ray Tracing with Reflection and Refraction](results/whitted_ray_tracing.png)

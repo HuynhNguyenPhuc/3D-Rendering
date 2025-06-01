@@ -128,9 +128,9 @@ void render(int width, int height, const std::string& output_path, const std::st
 
     PrimitiveTree primitives(primitive_pointers);
     
-    Vec3 camera(0.0f, 0.5f, 1.0f);
+    Vec3 camera(0.0f, 0.5, 1.0f);
     std::vector<Light*> lights;
-    lights.push_back(new Light(Vec3(0.0f, 0.75, 1.5f), Vec3(1.0f, 1.0f, 1.0f), 5.0f));
+    lights.push_back(new Light(Vec3(0.0f, 1.0f, 1.5f), Vec3(1.0f, 1.0f, 1.0f), 1.0f));
 
     float fov = 90.0f * M_PI / 180.0f;
     float aspect = float(width) / float(height);
@@ -168,8 +168,8 @@ void render(int width, int height, const std::string& output_path, const std::st
 
 int main(int argc, char* argv[]) {
     int width = 1280;
-    int height = 1024;
-    std::string output_path = "./results/rendering.png";
+    int height = 1040;
+    std::string output_path = "./results/barrel.png";
     std::string mesh_path = "./models/barrel.obj";
     std::string texture_path = "./models/barrel.png";
     int texture_width = 4096;
